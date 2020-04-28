@@ -3,19 +3,16 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart';
-import 'package:location_permissions/location_permissions.dart';
 import 'package:mockito/mockito.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'src/factories/placemark_factory.dart';
 import 'src/factories/position_factory.dart';
 
 class MockEventChannel extends Mock implements EventChannel {}
 
-class MockPermissionHandler extends Mock implements LocationPermissions {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  MockPermissionHandler mockPermissionHandler;
   MockEventChannel mockEventChannel;
   MethodChannel mockMethodChannel;
   final List<MethodCall> log = <MethodCall>[];
@@ -27,10 +24,9 @@ void main() {
     mockEventChannel = MockEventChannel();
     mockMethodChannel =
         MethodChannel('flutter.baseflow.com/geolocator/methods');
-    mockPermissionHandler = MockPermissionHandler();
 
     geolocator = Geolocator.private(
-        mockMethodChannel, mockEventChannel, mockPermissionHandler);
+        mockMethodChannel, mockEventChannel);
   });
 
   tearDown(() {
@@ -67,9 +63,7 @@ void main() {
       final GeolocationStatus expectedPermissionStatus =
           GeolocationStatus.unknown;
 
-      when(mockPermissionHandler.checkPermissionStatus(
-        level: LocationPermissionLevel.location,
-      )).thenAnswer((_) async => PermissionStatus.unknown);
+      when(Permission.location.status).thenAnswer((_) async => PermissionStatus.undetermined);
 
       final actualPermissionStatus =
           await geolocator.checkGeolocationPermissionStatus(
@@ -83,9 +77,7 @@ void main() {
     test('I should recieve true if location services are enabled', () async {
       final bool expected = true;
 
-      when(mockPermissionHandler.checkServiceStatus(
-        level: LocationPermissionLevel.location,
-      )).thenAnswer((_) async => ServiceStatus.enabled);
+      when(Permission.location.serviceStatus).thenAnswer((_) async => ServiceStatus.enabled);
 
       final bool isEnabled = await geolocator.isLocationServiceEnabled();
 
@@ -95,9 +87,7 @@ void main() {
     test('I should recieve false if location services are disabled', () async {
       final bool expected = false;
 
-      when(mockPermissionHandler.checkServiceStatus(
-        level: LocationPermissionLevel.location,
-      )).thenAnswer((_) async => ServiceStatus.disabled);
+      when(Permission.location.serviceStatus).thenAnswer((_) async => ServiceStatus.disabled);
 
       final bool isEnabled = await geolocator.isLocationServiceEnabled();
 
@@ -140,8 +130,7 @@ void main() {
     test(
         'I should receive a stream with position updates if permissions are granted',
         () {
-      when(mockPermissionHandler.requestPermissions(
-              permissionLevel: LocationPermissionLevel.location))
+      when(Permission.location.status)
           .thenAnswer((_) async => PermissionStatus.granted);
 
       final Position mockPosition = PositionFactory.createMockPosition();
@@ -156,9 +145,7 @@ void main() {
       const expectedErrorCode = 'PERMISSION_DENIED';
       const expectedErrorMessage = 'Access to location data denied';
 
-      when(mockPermissionHandler.requestPermissions(
-        permissionLevel: LocationPermissionLevel.location,
-      )).thenAnswer((_) async => PermissionStatus.denied);
+      when(Permission.location.status).thenAnswer((_) async => PermissionStatus.denied);
 
       var positionStream = geolocator.getPositionStream();
       try {
@@ -182,8 +169,7 @@ void main() {
 
       initMockMethodChannel('getCurrentPosition', expectedPosition.toJson());
 
-      when(mockPermissionHandler.checkPermissionStatus(
-              level: LocationPermissionLevel.location))
+      when(Permission.location.status)
           .thenAnswer((_) async => PermissionStatus.granted);
 
       final Position position = await geolocator.getCurrentPosition(
@@ -202,8 +188,7 @@ void main() {
       const expectedErrorCode = 'PERMISSION_DENIED';
       const expectedErrorMessage = 'Access to location data denied';
 
-      when(mockPermissionHandler.checkPermissionStatus(
-              level: LocationPermissionLevel.location))
+      when(Permission.location.status)
           .thenAnswer((_) async => PermissionStatus.denied);
 
       try {
@@ -222,8 +207,7 @@ void main() {
       final expectedArguments =
           LocationOptions(forceAndroidLocationManager: true);
 
-      when(mockPermissionHandler.checkPermissionStatus(
-              level: LocationPermissionLevel.location))
+      when(Permission.location.status)
           .thenAnswer((_) async => PermissionStatus.granted);
 
       var position = await geolocator.getCurrentPosition(
@@ -247,8 +231,7 @@ void main() {
 
       initMockMethodChannel('getLastKnownPosition', expectedPosition.toJson());
 
-      when(mockPermissionHandler.checkPermissionStatus(
-              level: LocationPermissionLevel.location))
+      when(Permission.location.status)
           .thenAnswer((_) async => PermissionStatus.granted);
 
       final Position position = await geolocator.getLastKnownPosition(
@@ -267,8 +250,7 @@ void main() {
       const expectedErrorCode = 'PERMISSION_DENIED';
       const expectedErrorMessage = 'Access to location data denied';
 
-      when(mockPermissionHandler.checkPermissionStatus(
-              level: LocationPermissionLevel.location))
+      when(Permission.location.status)
           .thenAnswer((_) async => PermissionStatus.denied);
 
       try {
@@ -286,8 +268,7 @@ void main() {
       final expectedArguments =
           LocationOptions(forceAndroidLocationManager: true);
 
-      when(mockPermissionHandler.checkPermissionStatus(
-              level: LocationPermissionLevel.location))
+      when(Permission.location.status)
           .thenAnswer((_) async => PermissionStatus.granted);
 
       var position = await geolocator.getLastKnownPosition(

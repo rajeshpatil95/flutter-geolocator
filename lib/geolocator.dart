@@ -5,7 +5,7 @@ import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:google_api_availability/google_api_availability.dart';
 import 'package:meta/meta.dart';
-import 'package:location_permissions/location_permissions.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:vector_math/vector_math.dart';
 import 'package:equatable/equatable.dart';
 
@@ -31,7 +31,7 @@ class Geolocator {
           EventChannel('flutter.baseflow.com/geolocator/events');
 
       _singleton = Geolocator.private(
-          methodChannel, eventChannel, LocationPermissions());
+          methodChannel, eventChannel);
     }
     return _singleton;
   }
@@ -42,21 +42,18 @@ class Geolocator {
   Geolocator.private(
     this._methodChannel,
     this._eventChannel,
-    this._permissionHandler,
   );
 
   static Geolocator _singleton;
   final MethodChannel _methodChannel;
   final EventChannel _eventChannel;
-  final LocationPermissions _permissionHandler;
   Stream<Position> _onPositionChanged;
 
   /// Returns a [Future] containing the current [GeolocationStatus] indicating the availability of location services on the device.
   Future<GeolocationStatus> checkGeolocationPermissionStatus(
       {GeolocationPermission locationPermission =
           GeolocationPermission.location}) async {
-    final PermissionStatus permissionStatus = await _permissionHandler
-        .checkPermissionStatus(level: toPermissionLevel(locationPermission));
+    final PermissionStatus permissionStatus = await toPermissionLevel(locationPermission).status;
 
     return fromPermissionStatus(permissionStatus);
   }
@@ -64,7 +61,7 @@ class Geolocator {
   /// Returns a [Future] containing a [bool] value indicating whether location services are enabled on the device.
   Future<bool> isLocationServiceEnabled() async {
     final ServiceStatus serviceStatus =
-        await _permissionHandler.checkServiceStatus();
+        await Permission.location.serviceStatus;
 
     return serviceStatus == ServiceStatus.enabled ? true : false;
   }
@@ -196,13 +193,11 @@ class Geolocator {
   }
 
   Future<PermissionStatus> _getLocationPermission(
-      LocationPermissionLevel locationPermissionLevel) async {
-    final PermissionStatus permission = await _permissionHandler
-        .checkPermissionStatus(level: locationPermissionLevel);
+      Permission locationPermissionLevel) async {
+    final PermissionStatus permission = await locationPermissionLevel.status;
 
     if (permission != PermissionStatus.granted) {
-      final PermissionStatus permissionStatus = await _permissionHandler
-          .requestPermissions(permissionLevel: locationPermissionLevel);
+      final PermissionStatus permissionStatus = await locationPermissionLevel.request();
 
       return permissionStatus;
     } else {
