@@ -14,7 +14,7 @@ dependencies:
 
   equatable: ^1.0.3
   google_api_availability: ^2.0.4
-  permission_handler: 5.0.0+hotfix.4
+  permission_handler: 5.0.0+hotfix.5
   vector_math: ^2.0.8
 
 dev_dependencies:
@@ -22,7 +22,7 @@ dev_dependencies:
     sdk: flutter
 
   mockito: ^4.1.1
-  pedantic: ^1.8.0+1
+  pedantic: ^1.9.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
